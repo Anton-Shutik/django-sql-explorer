@@ -1,5 +1,6 @@
+import types
 from django.db import DatabaseError
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 
 from explorer.exporters import get_exporter_class
 from explorer.utils import url_get_params
@@ -19,7 +20,8 @@ def _export(request, query, download=True):
             msg, status=500
         )
 
-    response = HttpResponse(
+    resp_class = StreamingHttpResponse if isinstance(output, types.GeneratorType) else HttpResponse
+    response = resp_class(
         output,
         content_type=exporter.content_type
     )

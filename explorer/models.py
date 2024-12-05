@@ -276,16 +276,20 @@ class QueryResult:
         cursor, duration = self.execute_query()
 
         self._description = cursor.description or []
-        self._data = [list(r) for r in cursor.fetchall()]
         self.duration = duration
-
-        cursor.close()
+        self.cursor = cursor
 
         self._headers = self._get_headers()
         self._summary = {}
 
+    def __del__(self):
+        if hasattr(self, "cursor"):
+            self.cursor.close()
+
     @property
     def data(self):
+        if not hasattr(self, "_data"):
+            self._data =  list(map(list, self.cursor))
         return self._data or []
 
     @property

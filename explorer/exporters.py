@@ -63,6 +63,35 @@ class CSVExporter(BaseExporter):
         for row in res.data:
             writer.writerow(row)
         return csv_data
+    
+
+class StreamingCSVExporter(BaseExporter):
+    
+    name = "Streaming CSV"
+    content_type = "text/csv"
+    file_extension = ".csv"
+
+    def get_output(self, **kwargs):
+        value = self.get_file_output(**kwargs)
+        return value
+    
+    def _get_output(self, res, **kwargs):
+        delim = kwargs.get("delim") or app_settings.CSV_DELIMETER
+        delim = "\t" if delim == "tab" else str(delim)
+        delim = app_settings.CSV_DELIMETER if len(delim) > 1 else delim
+
+        class Echo:
+            def write(self, value):
+                return value
+        
+        writer = csv.writer(Echo(), delimiter=delim)
+        writer.writerow(res.headers)
+
+        def generate_response():
+            yield writer.writerow(res.headers)
+            yield from (writer.writerow(row) for row in res.cursor)
+
+        return generate_response()
 
 
 class JSONExporter(BaseExporter):
